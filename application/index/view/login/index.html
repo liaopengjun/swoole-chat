@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>登录</title>
+<link rel="stylesheet" href="__STATIC__/login/css/jq22.css">
+</head>
+<body>
+<!-- begin -->
+<div id="login">
+    <div class="wrapper">
+        <div class="login">
+            <form action="#" method="post" class="container offset1 loginform">
+                <div id="owl-login">
+                    <div class="hand"></div>
+                    <div class="hand hand-r"></div>
+                    <div class="arms">
+                        <div class="arm"></div>
+                        <div class="arm arm-r"></div>
+                    </div>
+                </div>
+                <div class="pad">
+                    <div class="control-group">
+                        <div class="controls">
+                            <label for="email" class="control-label fa fa-envelope"></label>
+                            <input id="email" type="email" name="email" placeholder="Email" tabindex="1" autofocus="autofocus" class="form-control input-medium">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="controls">
+                            <label for="password" class="control-label fa fa-asterisk"></label>
+                            <input id="password" type="password" name="password" placeholder="Password" tabindex="2" class="form-control input-medium">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <a href="#" tabindex="5" class="btn pull-left btn-link text-muted">忘记密码?</a>
+                    <a href="{:url('/registered')}" tabindex="6" class="btn btn-link text-muted">注册</a>
+                    <button type="button" tabindex="4" class="btn btn-primary" onclick="login()">登录</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="__STATIC__/login/js/jquery.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script>
+        function login() {
+            
+            var reg = /^\w+((-\w+)|(\.\w+))*\@[A-Za-z0-9]+((\.|-)[A-Za-z0-9]+)*\.[A-Za-z0-9]+$/;
+            var email = $("#email").val();
+            var password = $("#password").val();
+
+            if(!reg.test(email))
+            {
+                swal ( "邮箱格式不正确" ,  "Something went wrong!" ,  "error" );return false;
+            }
+
+            if(!password){
+                swal ( "请输入密码" ,  "Something went wrong!" ,  "error" );return false;
+            }
+
+            var data = $('form').serialize();
+
+            axios.post('/getLogin',data)
+                .then(function (response) {
+                     if (response.data.status == 1) {
+                         swal(response.data.msg, '', 'success').then(function () {
+                             // 用户点击弹框上按钮时重新加载页面
+                             window.location.href = "{:url('/')}";
+                         });
+                     }else{
+                         swal(response.data.msg, '', "error");
+                     }
+
+                })
+                .catch(function (error) {
+                    swal ( "系统错误" , error ,  "error" );return false;
+                });
+        }
+    </script>
+    <script>
+    $(function() {
+
+        $('#login #password').focus(function() {
+            $('#owl-login').addClass('password');
+        }).blur(function() {
+            $('#owl-login').removeClass('password');
+        });
+    });
+    </script>
+</div>
+<!-- end -->
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>聊天室</title>
+
+<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet">
+<link rel="stylesheet" href="__STATIC__/chat/css/reset.min.css">
+<link rel="stylesheet" href="__STATIC__/chat/css/style.css">
+
+</head>
+<body>
+
+<div class="wrapper">
+	<div class="container">
+        <div class="left">
+            <div class="top">
+                <!--<input type="text" placeholder="Search" />-->
+                <a href="javascript:;" class="search"><span onclick="outlogin()">退出</span></a>
+            </div>
+            <ul class="people">
+                <li class="person" data-chat="person1">
+                    <img src="__STATIC__/chat/img/thomas.jpg" alt="" />
+                    <span class="name">Thomas Bangalter</span>
+                    <span class="time">2:09 PM</span>
+                    <span class="preview">I was wondering...</span>
+                </li>
+
+            </ul>
+        </div>
+        <div class="right">
+            <div class="top"><span>To: <span class="name">Dog Woofson</span></span></div>
+
+            <div class="chat" data-chat="person1">
+                <div class="conversation-start">
+                    <span>Today, 5:38 PM</span>
+                </div>
+                <div class="bubble you">
+                    Hello, can you hear me?111
+                </div>
+                <div class="bubble you">
+                    I'm in California dreaming
+                </div>
+                <div class="bubble me">
+                    ... about who we used to be.
+                </div>
+                <div class="bubble me">
+                    Are you serious?
+                </div>
+                <div class="bubble you">
+                    When we were younger and free...
+                </div>
+                <div class="bubble you">
+                    I've forgotten how it felt before
+                </div>
+            </div>
+            <div class="chat" data-chat="person10">
+                <div class="conversation-start">
+                    <span>Today, 5:38 PM</span>
+                </div>
+                <div class="bubble you">
+                   你好军哥
+                </div>
+            </div>
+            <div class="chat" data-chat="person11">
+                <div class="conversation-start">
+                    <span>Today, 5:38 PM</span>
+                </div>
+                <div class="bubble you">
+                  在干嘛?朋友
+                </div>
+                <div class="bubble me">
+                    写代码
+                </div>
+            </div>
+            <div class="chat" data-chat="person12">
+                <div class="conversation-start">
+                    <span>Today, 5:38 PM</span>
+                </div>
+                <div class="bubble you">
+                   晚上好？
+                </div>
+            </div>
+            <div class="write">
+                <a href="javascript:;" class="write-link attach"></a>
+                <input type="text" name="msg" placeholder="请输入消息" id="msg"/>
+                <a href="javascript:;" class="write-link smiley"></a>
+                <a href="javascript:;" class="write-link send"></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script  src="__STATIC__/chat/js/index.js"></script>
+<script src="__STATIC__/login/js/jquery.min.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<script>
+
+    function outlogin() {
+        swal({
+            title: "确定要退出?",
+            icon: "warning",
+            buttons: true,
+            dangerMode: true,
+        }).then((willDelete) => {
+            if(willDelete) {
+                axios.get('/outLogin')
+                    .then(function (response) {
+                        if (response.data.status == 1) {
+                            swal(response.data.msg, '', 'success').then(function () {
+                                // 用户点击弹框上按钮时重新加载页面
+                                window.location.href = "{:url('/login')}";
+                            });
+                        }else{
+                            swal(response.data.msg, '', "error");
+                        }
+                    })
+                    .catch(function (error) {
+                        swal ( "系统错误" , error ,  "error" );return false;
+                    });
+
+            } 
+        });
+
+    }
+
+
+
+</script>
+<script>
+
+    document.querySelector('.chat[data-chat=person1]').classList.add('active-chat');
+    document.querySelector('.person[data-chat=person1]').classList.add('active');
+
+    var friends = {
+        list: document.querySelector('ul.people'),
+        all: document.querySelectorAll('.left .person'),
+        name: '' };
+
+    var chat = {
+        container: document.querySelector('.container .right'),
+        current: null,
+        person: null,
+        name: document.querySelector('.container .right .top .name') };
+
+    var uid= "{$uid}";
+    var token= "{$email}";
+    var websocket = new WebSocket("ws://jcsjasafxzhzsxc.club:9502?uid="+uid+"&token="+token);
+
+    websocket.onopen = function (evt) {
+        console.log("开启服务");
+    };
+
+    websocket.onclose = function (evt) {
+        console.log("关闭服务");
+    };
+
+    //发送消息
+    $(".send").click(function () {
+
+        var text = $('#msg').val();
+        var toid = $('.people .active').attr('data-index');
+        var fromid = uid;
+
+        if(!text){
+            swal ( "不能提交空信息" ,'',  "error" );return false;
+        }
+
+        //发送消息
+        var message = '{"type":"say","res":{"data":"'+text+'","fromid":"'+fromid+'","toid":"'+toid+'"}}';
+        websocket.send(message);
+
+    })
+
+    websocket.onmessage = function (evt) {
+        console.log(evt)
+        var data = $.parseJSON(evt.data);
+        if(data.type == 'init'){
+            var index = getsplice(data.res,uid);
+
+            //删除数组指定元素
+            data.res.splice(index,1);
+
+            var html = '';
+            $(".people").html('');
+            $.each(data.res,function (index,val) {
+                html += "<li class='person"+(index==0?'  active':' ')+"' data-chat='person"+val.id+"' data-index='"+val.id+"'>";
+                html += "<img src='"+val.image+"' alt=''/>";
+                html += "<span class='name'>"+val.username+"</span>";
+                html += "<span class='time'>2:09 PM</span>";
+                html += "<span class='preview'>I was wondering...</span>";
+            });
+            $(".people").append(html);
+        }else if(data.type == 'say'){
+            console.log('say');
+            console.log(data.res.data);
+        }
+        document.querySelectorAll('.left .person').forEach(function (f) {
+            f.addEventListener('mousedown', function () {
+                f.classList.contains('active') || setAciveChat(f);
+            });
+        });
+
+
+    };
+
+    websocket.onerror = function (evt, e) {
+        console.log('Error occured: ' + evt.data);
+    };
+
+    function setAciveChat(f) {
+        friends.list.querySelector('.active').classList.remove('active');
+        f.classList.add('active');
+        chat.current = chat.container.querySelector('.active-chat');
+        chat.person = f.getAttribute('data-chat');
+        chat.current.classList.remove('active-chat');
+        chat.container.querySelector('[data-chat="' + chat.person + '"]').classList.add('active-chat');
+        friends.name = f.querySelector('.name').innerText;
+        chat.name.innerHTML = friends.name;
+    }
+    function getsplice(data,uid) {
+        var delindex = '';
+        $.each(data,function (index,val) {
+          if(val.id == uid){
+                    delindex = index;
+            }
+        })
+        return delindex;
+
+    }
+
+</script>
+</body>
+</html>
