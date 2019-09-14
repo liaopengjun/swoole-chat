@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>聊天室</title>
+<title>{$email}-聊天室</title>
 
 <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet">
 <link rel="stylesheet" href="__STATIC__/chat/css/reset.min.css">
@@ -29,59 +29,47 @@
 
             </ul>
         </div>
-        <div class="right">
-            <div class="top"><span>To: <span class="name">Dog Woofson</span></span></div>
+        <div class="right" >
+            <div class="top"><span>To: <span class="name"></span></span></div>
+            <div class="chatlist" style="height: 601px;">
+                <div class="chat" data-chat="person1">
+                    <div class="conversation-start">
+                        <span>Today, 5:38 PM</span>
+                    </div>
+                    <div class="bubble you">
+                        Hello, can you hear me?111
+                    </div>
+                    <div class="bubble me">
+                        ... about who we used to be.
+                    </div>
+                </div>
 
-            <div class="chat" data-chat="person1">
-                <div class="conversation-start">
-                    <span>Today, 5:38 PM</span>
-                </div>
-                <div class="bubble you">
-                    Hello, can you hear me?111
-                </div>
-                <div class="bubble you">
-                    I'm in California dreaming
-                </div>
-                <div class="bubble me">
-                    ... about who we used to be.
-                </div>
-                <div class="bubble me">
-                    Are you serious?
-                </div>
-                <div class="bubble you">
-                    When we were younger and free...
-                </div>
-                <div class="bubble you">
-                    I've forgotten how it felt before
-                </div>
             </div>
-            <div class="chat" data-chat="person10">
-                <div class="conversation-start">
-                    <span>Today, 5:38 PM</span>
-                </div>
-                <div class="bubble you">
-                   你好军哥
-                </div>
-            </div>
-            <div class="chat" data-chat="person11">
-                <div class="conversation-start">
-                    <span>Today, 5:38 PM</span>
-                </div>
-                <div class="bubble you">
-                  在干嘛?朋友
-                </div>
-                <div class="bubble me">
-                    写代码
-                </div>
-            </div>
-            <div class="chat" data-chat="person12">
-                <div class="conversation-start">
-                    <span>Today, 5:38 PM</span>
-                </div>
-                <div class="bubble you">
-                   晚上好？
-                </div>
-            </div>
+            <!--<div class="chat" data-chat="person10">-->
+                <!--<div class="conversation-start"><span>Today, 5:38 PM</span> </div>-->
+                <!--<div class="bubble you">-->
+                   <!--你好军哥-->
+                <!--</div>-->
+            <!--</div>-->
+            <!--<div class="chat" data-chat="person11">-->
+                <!--<div class="conversation-start">-->
+                    <!--<span>Today, 5:38 PM</span>-->
+                <!--</div>-->
+                <!--<div class="bubble you">-->
+                  <!--在干嘛?朋友-->
+                <!--</div>-->
+                <!--<div class="bubble me">-->
+                    <!--写代码-->
+                <!--</div>-->
+            <!--</div>-->
+            <!--<div class="chat" data-chat="person12">-->
+                <!--<div class="conversation-start">-->
+                    <!--<span>Today, 5:38 PM</span>-->
+                <!--</div>-->
+                <!--<div class="bubble you">-->
+                   <!--晚上好？-->
+                <!--</div>-->
+            <!--</div>-->
             <div class="write">
                 <a href="javascript:;" class="write-link attach"></a>
                 <input type="text" name="msg" placeholder="请输入消息" id="msg"/>
@@ -94,6 +82,7 @@
 
 <script  src="__STATIC__/chat/js/index.js"></script>
 <script src="__STATIC__/login/js/jquery.min.js"></script>
+<script src="__STATIC__/chat/layer/layer.js"></script>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <script>
@@ -104,6 +93,7 @@
             icon: "warning",
             buttons: true,
             dangerMode: true,
+
         }).then((willDelete) => {
             if(willDelete) {
                 axios.get('/outLogin')
@@ -125,12 +115,11 @@
         });
 
     }
-
-
-
 </script>
 <script>
 
+    var uid= "{$uid}";
+    var token= "{$email}";
     document.querySelector('.chat[data-chat=person1]').classList.add('active-chat');
     document.querySelector('.person[data-chat=person1]').classList.add('active');
 
@@ -145,8 +134,7 @@
         person: null,
         name: document.querySelector('.container .right .top .name') };
 
-    var uid= "{$uid}";
-    var token= "{$email}";
+
     var websocket = new WebSocket("ws://jcsjasafxzhzsxc.club:9502?uid="+uid+"&token="+token);
 
     websocket.onopen = function (evt) {
@@ -168,35 +156,128 @@
             swal ( "不能提交空信息" ,'',  "error" );return false;
         }
 
-        //发送消息
-        var message = '{"type":"say","res":{"data":"'+text+'","fromid":"'+fromid+'","toid":"'+toid+'"}}';
-        websocket.send(message);
+        axios.post('/chatMsg', {
+            text: text,
+            toid: toid,
+            fromid:fromid
+        }).then(function (response) {
+            if (response.data.status == 1){
+                //发送消息
+                var message = '{"type":"say","res":{"data":"'+text+'","fromid":"'+fromid+'","toid":"'+toid+'"}}';
+                //推送到服务端
+                websocket.send(message);
+                //给当前页面显示聊天信息
+                $(".active-chat").append('<div class="bubble me">'+text+'</div>');
+                $(".active-chat").scrollTop('40000');
+                $("#msg").val('');
 
-    })
+            }else{
+                swal (response.data.msg,'',  "error" );return false;
+            }
+
+        }).catch(function (error) {
+                swal ( "无法发送消息" ,'',  "error" );return false;
+            });
+
+    });
 
     websocket.onmessage = function (evt) {
-        console.log(evt)
         var data = $.parseJSON(evt.data);
         if(data.type == 'init'){
+
             var index = getsplice(data.res,uid);
 
             //删除数组指定元素
             data.res.splice(index,1);
 
-            var html = '';
+            var userhtml = '';
+            var chathtml = '';
+
             $(".people").html('');
+            $(".chatlist").html('');
+
             $.each(data.res,function (index,val) {
-                html += "<li class='person"+(index==0?'  active':' ')+"' data-chat='person"+val.id+"' data-index='"+val.id+"'>";
-                html += "<img src='"+val.image+"' alt=''/>";
-                html += "<span class='name'>"+val.username+"</span>";
-                html += "<span class='time'>2:09 PM</span>";
-                html += "<span class='preview'>I was wondering...</span>";
+                layer.msg(val.username+"上线了");
+                //用户列表
+                userhtml += "<li class='person"+(index==0?'  active':' ')+"' data-chat='person"+val.id+"'  data-index='"+val.id+"'>";
+                userhtml += "<img src='"+val.image+"' alt=''/>";
+                userhtml += "<span class='name'>"+val.username+"</span>";
+                userhtml += "<span class='time'>2:09 PM</span>";
+                userhtml += "<span class='preview'>I was wondering...</span>";
+
+                //消息列表
+                chathtml += "<div class='chat"+(index==0?'  active-chat':' ')+"' data-chat='person"+val.id+"' style='overflow-y:scroll;overflow-x:scroll;'>";
+                chathtml += "<div class='conversation-start'><span>Today, 5:38 PM</span></div>";
+                chathtml += "</div>";
+
+                axios.post('/load', {
+                    toid: val.id,
+                    fromid:uid
+                }).then(function (response) {
+                    console.log(response.data);
+                    if(response.data){
+                        var chatmsg= '';
+                        $.each(response.data,function (index1,val1) {
+                            if(val1.fromid == uid){
+                                chatmsg = "<div class='bubble me'>"+val1.text+"</div>";
+                            }else{
+                                chatmsg = "<div class='bubble you'>"+val1.text+"</div>";
+                            }
+                            console.log(chatmsg);
+                            //指定用户显示历史记录消息
+                            var attr1 = 'person'+val1.fromid;
+                            var attr2= 'person'+val1.toid;
+                            $(".chatlist").find('div').each(function () {
+                                var status = $(this);
+                                if(status.attr('data-chat') == attr1 || status.attr('data-chat') == attr2){
+                                    status.append(chatmsg);
+                                }
+                            });
+                        });
+                        // $(".active-chat").append(chatmsg);
+                        $(".active-chat").scrollTop('40000');
+
+                    }
+                }).catch(function (error) {
+                    swal ( "无法获取聊天记录" ,'',  "error" );return false;
+                });
             });
-            $(".people").append(html);
+
+            $(".people").append(userhtml);
+            $(".chatlist").append(chathtml);
+            $(".active-chat").scrollTop('40000');
+
         }else if(data.type == 'say'){
-            console.log('say');
+
             console.log(data.res.data);
+            var attr = 'person'+data.res.fromid;
+            //指定用户推送消息
+            $(".chatlist").find('div').each(function () {
+                var status = $(this);
+                if(status.attr('data-chat') == attr){
+                    status.append('<div class="bubble you">'+data.res.data+'</div>');
+
+                }
+            });
+            // $(".active-chat").append('<div class="bubble you">'+data.res.data+'</div>');
+            $(".active-chat").scrollTop('40000');
+
+
+
+        }else if(data.type == 'close'){
+
+            layer.msg(data.res.user+"下线了");
+
+            //删除在线用户列表
+            $(".people").find('li').each(function () {
+                    var status = $(this);
+                    if(status.attr('data-index') == data.res.id){
+                        status.remove();
+                    }
+            });
+
         }
+
         document.querySelectorAll('.left .person').forEach(function (f) {
             f.addEventListener('mousedown', function () {
                 f.classList.contains('active') || setAciveChat(f);

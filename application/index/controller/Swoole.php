@@ -2,6 +2,7 @@
 
 namespace app\index\controller;
 
+use phpDocumentor\Reflection\DocBlock\Tags\Author;
 use think\swoole\Server;
 use app\index\lib\Predis;
 use app\index\model\User;
@@ -93,8 +94,38 @@ class Swoole extends Server
         $response->end("<h1>Hello Swoole. #" . rand(1000, 9999) . "</h1>");
     }
 
-    public function onClose($ser, $fd) {
-        echo "client {$fd} closed\n";
+    public function onClose($server, $fd) {
+
+        $clientInfo = $server->getClientInfo($fd);
+
+        //清除redis fd
+         Predis::getInstance()->del(Predis::fdkey($clientInfo['uid']));
+
+        //关闭连接用户
+        $username =   db('user')->where('id',$clientInfo['uid'])->value('username');
+        
+        $msg = [
+          'type'=>'close',
+           'res'=>[
+               'user'=>$username,
+               'id'=>$clientInfo['uid'],
+           ],
+        ];
+        
+        $jsonMsg = json_encode($msg);
+
+         //给在线列表发送用户离线通知
+         $clientList = $server->getClientList($this->start_fd,50);
+
+         foreach ($clientList as $k=>$v){
+             if($v!= $fd){
+                 $server->push($v,$jsonMsg);
+
+             }
+         }
+
+
+
     }
 
     public function onTask($serv, $task_id,$src_worker_id,$data){
